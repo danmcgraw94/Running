@@ -1,8 +1,8 @@
-// Function to get the Sunday date of the current week, formatted "Mon DD"
+// Get the Sunday date of the current week formatted as "Mon DD"
 function getSundayOfCurrentWeek() {
   const today = new Date();
-  const day = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = today.getDate() - day; // go back to Sunday
+  const day = today.getDay(); // Sunday = 0
+  const diff = today.getDate() - day;
   const sunday = new Date(today);
   sunday.setDate(diff);
 
@@ -14,31 +14,46 @@ function getSundayOfCurrentWeek() {
 document.getElementById('training-header').textContent =
   `Training Plan – Week of ${getSundayOfCurrentWeek()}`;
 
-// Function to populate table body with CSV data rows
+// Function to add rows to the table
 function displayTrainingData(data) {
   const tbody = document.getElementById('table-body');
-  tbody.innerHTML = ''; // Clear previous rows
+  tbody.innerHTML = ''; // clear previous rows
 
   data.forEach(row => {
     const tr = document.createElement('tr');
 
+    // Escape values for safety (optional)
+    const date = row.date || '';
+    const day = row.day || '';
+    const workout = row.workout || '';
+    const miles = row.miles || '';
+
     tr.innerHTML = `
-      <td>${row.date}</td>
-      <td>${row.day}</td>
-      <td>${row.workout}</td>
-      <td>${row.miles}</td>
+      <td>${date}</td>
+      <td>${day}</td>
+      <td>${workout}</td>
+      <td>${miles}</td>
     `;
 
     tbody.appendChild(tr);
   });
 }
 
-// Fetch and parse CSV, then display
+// Load and parse CSV using fetch and PapaParse
 fetch('Training_This_Week.csv')
-  .then(res => res.text())
-  .then(csvText => {
-    const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
-    displayTrainingData(results.data);
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    return response.text();
   })
-  .catch(err => console.error('Error loading CSV:', err));
-
+  .then(csvText => {
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+    });
+    displayTrainingData(parsed.data);
+  })
+  .catch(error => {
+    console.error('Error loading or parsing CSV:', error);
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = `<tr><td colspan="4" style="color:red;">Failed to load training data.</td></tr>`;
+  });
